@@ -5,13 +5,11 @@ import struct
 def create_mangement_socket(addr, port):
     """
     Creates our management socket to interact with the teamserver
-    :param addr:
-    :param port:
+    :param addr: The address to bind the management socket to
+    :param port: The address to bind the management port to
     :return:
     """
-    management_channel = {}
-    management_channel['sock'] = socket.create_connection((addr, int(port)))
-    management_channel['state'] = 1
+    management_channel = {'sock': socket.create_connection((addr, int(port))), 'state': 1}
     return (management_channel['sock'])
 
 
