@@ -17,13 +17,13 @@ class Listener(object):
         :return:
         """
         try:
-            listener.listening_post.log(f"Starting management socket on {listener.addr}:{listener.port}",
+            listener.logging.log(f"Starting management socket on {listener.addr}:{listener.port}",
                                         source=f"{listener.listening_post.info['name']}")
-            listener.listening_post.management_socket = networking.connect_to_listener_socket(listener.addr,
+            listener.management_socket = networking.connect_to_listener_socket(listener.addr,
                                                                                               listener.port)
         # TODO: Too broad of an execption
         except Exception as e:
-            listener.listening_post.log(f"Critical error when starting Listening Post management Socket",
+            listener.logging.log(f"Critical error when starting Listening Post management Socket: {e}",
                                         level="critical", source=f"{listener.listening_post.info['name']}")
             exit()
 
@@ -32,7 +32,7 @@ class Listener(object):
         try:
             networking.recv_management_frame(listener.listening_post.management_socket)
         except Exception as e:
-            listener.listening_post.log(f"Invalid attempt to connect on management interface",
+            listener.logging.log(f"Invalid attempt to connect on management interface",
                                         source=f"{listener.listening_post.info['name']}")
 
     def start_lp(self, *args):
@@ -47,9 +47,6 @@ class Listener(object):
 
         listener = args[0]
         try:
-            # Create our management socket
-            self.setup_management_socket()
-
             # TODO: Setup Listener transport(s)
 
             # TODO: Request Manifests from Implants
@@ -68,6 +65,6 @@ class Listener(object):
             # TODO: Await commands from teamserver and perform main loop
 
         except Exception as e:
-            listener.listening_post.log(f"Critical error when starting teamserver api server", level="critical",
+            listener.logging.log(f"Critical error when starting teamserver api server: {e}", level="critical",
                                         source=f"{listener.listening_post.info['name']}")
             exit()

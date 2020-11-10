@@ -27,13 +27,10 @@ class Listener(object):
         # Implant Runtime Vars
         self.implants = {}
         self.implant_count = len(self.implants)
-        self.current_implant = None
 
         # Transport Runtime Vars
         self.transports = {}
-        self.transport_count = len(self.transport_count)
-        self.current_transport = None
-
+        self.transport_count = len(self.transports)
 
     def start(self):
         """
@@ -42,22 +39,18 @@ class Listener(object):
         :return:
         """
 
-        self.lp = Listener(args)
-
         # Give ourselves a listening_post
         self.listening_post = listening_post.Listener(self)
 
-        lp_thread = Thread(self.listening_post.start_lp, args=(self,))
-        lp_thread = True
+        lp_thread = Thread(target=self.listening_post.start_lp, args=(self,))
         lp_thread.start()
         self.logging.log("Started LP")
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='lp')
-    parser.add_argument("-a", "--address", required=False, default="0.0.0.0", help="Address to listen on")
-    parser.add_argument("-p", "--port", required=False, default=8080, help="Port to bind to")
+    parser.add_argument("-a", "--address", required=False, default="127.0.0.1", help="Address to connect to")
+    parser.add_argument("-p", "--port", required=False, default=8081, help="Port to connect to")
     parser.add_argument("-d", "--debug", required=False, default=False, action="store_true",
                         help="Enable debug logging")
     parser.add_argument("-c", "--config", required=False, default="config/config.conf",
@@ -67,5 +60,4 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
 
     lp = Listener(args)
-    args['config'] = lp.config.config
     lp.start()
