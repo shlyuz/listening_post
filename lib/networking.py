@@ -12,14 +12,14 @@ import lib.crypto.asymmetric
 
 def connect_to_listener_socket(addr, port):
     """
-    Creates our management socket to interact with the listener
+    Establish a connection to our management socket
     :param addr:
     :param port:
     :return:
     """
-    management_channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    management_channel.connect(addr, port)
-    return management_channel
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as management_channel:
+        management_channel.connect(addr, port)
+        return management_channel
 
 
 def send_management_frame(listener, data):
@@ -41,10 +41,6 @@ def recv_management_frame(listener):
     chunk = listener.listener.management_socket.recv(slen)
     while len(chunk) < slen:
         chunk = chunk + listener.listener.management_socket.recv(slen - len(chunk))
-
-
-def kill_management_socket(listener):
-    listener.listener.management_socket.close()
 
 
 def cook_transmit_frame(listener, data):

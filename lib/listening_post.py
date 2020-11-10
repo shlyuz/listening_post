@@ -19,7 +19,9 @@ class Listener(object):
         try:
             listener.listening_post.log(f"Starting management socket on {listener.addr}:{listener.port}",
                                         source=f"{listener.listening_post.info['name']}")
-            listener.listening_post.management_socket = networking.create_mangement_socket(listener.addr, listener.port)
+            listener.listening_post.management_socket = networking.connect_to_listener_socket(listener.addr,
+                                                                                              listener.port)
+        # TODO: Too broad of an execption
         except Exception as e:
             listener.listening_post.log(f"Critical error when starting Listening Post management Socket",
                                         level="critical", source=f"{listener.listening_post.info['name']}")
@@ -56,8 +58,10 @@ class Listener(object):
 
             # TODO: Prepare Listening Post Manifest
 
-            # TODO: Receive management socket for init from teamserver
+            # TODO: Create management socket
             self.setup_management_socket()
+
+            # TODO: Receive management socket for init from teamserver
 
             # TODO: Send listening post manifest to teamserver
 
