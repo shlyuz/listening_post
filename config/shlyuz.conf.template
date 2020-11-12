@@ -1,0 +1,10 @@
+[lp]
+# These values will be prepopulated
+component_id = f3500002cae04a6d9755981511110000
+
+[crypto]
+# These values will be prepopulated, DO NOT USE THESE VALUES
+sym_key = ayyyylmaoooooooo
+private_key = b'\xfbsKG7/\x87D\x8ac \xee\xdd<\xa5\xc1cL\x93v\x14\xba\xb1\xfb\x9d\r \xcb\x10\xa8\x88\xa3'
+ts_pk = b'\\x\x9bt\x8f\xa7\xe6s\x90O+\x9d\xbem\xac\x07\x0f\xe0\xcc{\xf7\xa6\x1f\xc6\xa7\xd9\xe5\xa4\xbe\x81Ov'
+xor_key = 0x01

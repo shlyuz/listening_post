@@ -1,5 +1,8 @@
 import socket
 import struct
+import ast
+
+from lib import frame_orchestrator
 
 
 def reset_socket(listener):
@@ -41,7 +44,9 @@ def recv_management_frame(listener):
         frame = listener.management_socket.recv(slen)
         listener.logging.log(f"raw_frame: {frame}", level="debug", source="lib.networking.recv")
         reset_socket(listener)
-        return frame
+        recv_frame = ast.literal_eval(frame.decode('utf-8'))
+        ack_frame = frame_orchestrator.determine_destination(recv_frame, listener)
+        return ack_frame
     except ConnectionResetError:
         listener.management_socket.close()
         listener.management_socket = connect_to_listener_socket(listener.addr, listener.port)

