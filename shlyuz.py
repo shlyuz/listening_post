@@ -8,6 +8,7 @@ from threading import Thread
 from lib import logging
 from lib import listening_post
 from lib import configparse
+from lib import common
 from lib.crypto import asymmetric
 
 
@@ -24,6 +25,7 @@ class Listener(object):
         # Runtime Variables
         self.logging = logging.Logging(args['debug'])
         self.logging.log("Starting LP", source="lp_init")
+        self.version = common.VERSION
         self.addr = args['address']
         self.port = args['port']
         self.config = configparse.ConfigParse(args['config'])

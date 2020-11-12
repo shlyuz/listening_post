@@ -54,7 +54,7 @@ class Listener(object):
                                   "implant_os": "win",
                                   "implant_user": "user"
                                   }],
-                    "id": 1
+                    "component_id": listener.component_id
                     }
         return manifest
 
