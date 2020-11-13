@@ -45,8 +45,8 @@ def recv_management_frame(listener):
         frame = listener.management_socket.recv(slen)
         listener.logging.log(f"raw_frame: {frame}", level="debug", source="lib.networking.recv")
         reset_socket(listener)
-        if frame[:len(ast.literal_eval(listener.config.config['init_signature']))] == ast.literal_eval(listener.config.config['init_signature']):
-            frame = frame[len(ast.literal_eval(listener.config.config['init_signature'])):]
+        if frame[:len(ast.literal_eval(listener.config.config['lp']['init_signature']))] == ast.literal_eval(listener.config.config['lp']['init_signature']):
+            frame = frame[len(ast.literal_eval(listener.config.config['lp']['init_signature'])):]
             uncooked_frame = ast.literal_eval(transmit.uncook_sealed_frame(listener, frame).decode('utf-8'))
         else:
             uncooked_frame = ast.literal_eval(transmit.uncook_transmit_frame(listener, frame).decode('utf-8'))

@@ -25,14 +25,14 @@ def uncook_transmit_frame(listener, frame):
     transmit_frame = lib.crypto.asymmetric.decrypt(frame_box, frame)
 
     # Decoding Routine
-    rc6_key = binascii.unhexlify(lib.crypto.hex_encoding.decode_hex(transmit_frame[0:32])).decode("utf-8")
+    rc6_key = binascii.unhexlify(lib.crypto.hex_encoding.decode_hex(transmit_frame[0:44])).decode("utf-8")
     listener.logging.log(f"rc6 key: {rc6_key}", level="debug", source="lib.transmit")
     unxord_frame = lib.crypto.xor.single_byte_xor(transmit_frame,
                                                   listener.xor_key)
     del transmit_frame
     unenc_frame = lib.crypto.hex_encoding.decode_hex(unxord_frame)
     del unxord_frame
-    unsorted_recv_frame = pickle.loads(binascii.unhexlify(unenc_frame[32:]))
+    unsorted_recv_frame = pickle.loads(binascii.unhexlify(unenc_frame[44:]))
     del unenc_frame
 
     data_list = []
@@ -93,6 +93,7 @@ def cook_sealed_frame(listener, data):
     :return:
     """
     rc6_key = secrets.token_urlsafe(16)
+    listener.logging.log(f"rc6 key: {rc6_key}", level="debug", source="lib.transmit")
     transmit_data = lib.crypto.rc6.encrypt(rc6_key, str(data).encode('utf-8'))
 
     encrypted_frames = []
@@ -137,7 +138,7 @@ def uncook_sealed_frame(listener, frame):
 
     # Decoding Routine
 
-    rc6_key = binascii.unhexlify(lib.crypto.hex_encoding.decode_hex(transmit_frame[0:32])).decode("utf-8")
+    rc6_key = binascii.unhexlify(lib.crypto.hex_encoding.decode_hex(transmit_frame[0:44])).decode("utf-8")
     listener.logging.log(f"rc6 key: {rc6_key}", level="debug", source="lib.transmit")
     unxord_frame = lib.crypto.xor.single_byte_xor(transmit_frame,
                                                   listener.xor_key)
@@ -145,7 +146,7 @@ def uncook_sealed_frame(listener, frame):
     del transmit_frame
     unenc_frame = lib.crypto.hex_encoding.decode_hex(unxord_frame)
     del unxord_frame
-    unsorted_recv_frame = pickle.loads(binascii.unhexlify(unenc_frame[32:]))
+    unsorted_recv_frame = pickle.loads(binascii.unhexlify(unenc_frame[44:]))
     del unenc_frame
 
     data_list = []

@@ -71,7 +71,7 @@ def encrypt(msg_box, message):
     """
     nonce = generate_nonce()
     if isinstance(msg_box, nacl.public.SealedBox):
-        # This is a sealed_box, we won't send a nonce
+
         encrypted_message = msg_box.encrypt(message)
     else:
         encrypted_message = msg_box.encrypt(message, nonce)
