@@ -33,10 +33,9 @@ class Listener(object):
     def initialize(self, manifest):
         try:
             initialization_frame = core.send_initialization(listener)
-            networking.send_management_frame(listener,
-                                             str(initialization_frame).encode('utf-8)'))  # Debug, this will be cooked
+            networking.send_management_frame(listener, initialization_frame)
             manifest_frame = networking.recv_management_frame(listener)
-            networking.send_management_frame(listener, str(manifest_frame).encode('utf-8'))
+            networking.send_management_frame(listener, manifest_frame)
             ack_frame = networking.recv_management_frame(listener)
             if listener.listening_post.status == "READY":
                 listener.logging.log(f"LP Ready", source="lib.core")

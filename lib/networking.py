@@ -3,6 +3,7 @@ import struct
 import ast
 
 from lib import frame_orchestrator
+from lib import transmit
 
 
 def reset_socket(listener):
@@ -44,8 +45,12 @@ def recv_management_frame(listener):
         frame = listener.management_socket.recv(slen)
         listener.logging.log(f"raw_frame: {frame}", level="debug", source="lib.networking.recv")
         reset_socket(listener)
-        recv_frame = ast.literal_eval(frame.decode('utf-8'))
-        ack_frame = frame_orchestrator.determine_destination(recv_frame, listener)
+        if frame[:len(ast.literal_eval(listener.config.config['init_signature']))] == ast.literal_eval(listener.config.config['init_signature']):
+            frame = frame[len(ast.literal_eval(listener.config.config['init_signature'])):]
+            uncooked_frame = ast.literal_eval(transmit.uncook_sealed_frame(listener, frame).decode('utf-8'))
+        else:
+            uncooked_frame = ast.literal_eval(transmit.uncook_transmit_frame(listener, frame).decode('utf-8'))
+        ack_frame = frame_orchestrator.determine_destination(uncooked_frame, listener)
         return ack_frame
     except ConnectionResetError:
         listener.management_socket.close()

