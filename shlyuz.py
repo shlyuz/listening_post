@@ -43,6 +43,7 @@ class Listener(object):
         # Implant Runtime Vars
         self.implants = {}
         self.implant_count = len(self.implants)
+        self.cmd_queue = []
 
         # Transport Runtime Vars
         self.transports = {}

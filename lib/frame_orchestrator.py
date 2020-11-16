@@ -3,7 +3,8 @@ from lib import core
 destinations = {"lpo": core.send_manifest,
                 "lpmo": core.initialized,
                 "lprk": core.rekey,
-                "rcmd": core.receive_command
+                "rcmd": core.receive_command,
+                "noop": core.noop
                 }
 
 

