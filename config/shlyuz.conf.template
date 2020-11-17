@@ -1,6 +1,9 @@
 [lp]
 # These values will be prepopulated
 component_id = f3500002cae04a6d9755981511110000
+init_signature = b'\xDE\AD\xF0\x0D'
+# Time in seconds to sleep between requesting jobs from teamserver
+main_job_timer = 60
 
 [crypto]
 # These values will be prepopulated, DO NOT USE THESE VALUES
