@@ -45,8 +45,9 @@ class Listener(object):
         self.implant_count = len(self.implants)
         self.cmd_queue = []
 
-        # # Transport Runtime Vars
-        # self.transports = {}
+        # Transport Runtime Vars
+        # Used for implant manifest retrievals
+        self.transports = {}
         # self.transport_count = len(self.transports)
 
     def start(self):

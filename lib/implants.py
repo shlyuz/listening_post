@@ -9,7 +9,9 @@ def _get_implant_index(listener, implant_id):
 
 
 def import_transport_for_implant(listener, implant_id, transport_name, transport_config):
+    # TODO: This won't really happen too often, since the transport likely needs to be prepared prior to the implant
     import_string = f"import transports.{transport_name} as transport"
+    transport_config['logging'] = listener.logging
     exec(import_string)
     try:
         # Find the index of the implant
@@ -23,6 +25,20 @@ def import_transport_for_implant(listener, implant_id, transport_name, transport
             listener.implants[implant_index]['transport'].prep_transport(transport_config)
     except ImportError:
         listener.logging.log(f"{transport_name} not found!, attempted import for {implant_id}",
+                             level="error", source="lib.implants")
+
+
+def prep_transport_for_implant_manifest(listener, transport_name, transport_config):
+    import_string = f"import transports.{transport_name} as transport"
+    transport_config['logging'] = listener.logging
+    try:
+        # Do a retrieval of the transport's method to signal for a manifest
+        exec(f"import transports.{transport_name} as transport")
+        implant_transport = transport.Transport()
+        implant_transport.prep_transport(transport_config)
+        listener.transports.append(implant_transport)
+    except ImportError:
+        listener.logging.log(f"{transport_name} not found!, attempted import for manifest retrieval",
                              level="error", source="lib.implants")
 
 
