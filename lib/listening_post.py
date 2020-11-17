@@ -27,7 +27,7 @@ class Listener(object):
                                                                                listener.port)
         # TODO: Too broad of an execption
         except Exception as e:
-            listener.logging.log(f"Critical error when starting Listening Post management Socket: {e}",
+            listener.logging.log(f"Critical [{type(e).__name__}] when starting Listening Post management Socket: {e}",
                                  level="critical", source=f"{listener.listening_post.info['name']}")
             exit()
 
@@ -49,7 +49,8 @@ class Listener(object):
             exit()
 
     def prepare_manifests(self):
-        # TODO:
+        # TODO: actual manifest
+        # DEBUG
         import uuid
         manifest = {"implants": [{"implant_id": "c41b07a940254f1d87ba60aadb93dded", # [{"implant_id": uuid.uuid4().hex,
                                   "implant_os": "win",
@@ -104,13 +105,10 @@ class Listener(object):
             # TODO: Prepare Listening Post Manifest
             listener.manifest = self.prepare_manifests()
 
-            # TODO: Create management socket
             self.setup_management_socket()
 
-            # TODO: Send management socket for init from teamserver
             self.initialize()
 
-            # TODO: Await commands from teamserver and perform main loop
             self.main()
 
         except Exception as e:

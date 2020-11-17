@@ -45,9 +45,9 @@ class Listener(object):
         self.implant_count = len(self.implants)
         self.cmd_queue = []
 
-        # Transport Runtime Vars
-        self.transports = {}
-        self.transport_count = len(self.transports)
+        # # Transport Runtime Vars
+        # self.transports = {}
+        # self.transport_count = len(self.transports)
 
     def start(self):
         """
@@ -62,6 +62,8 @@ class Listener(object):
         lp_thread = Thread(target=self.listening_post.start_lp, args=(self,))
         lp_thread.start()
         self.logging.log("Started LP")
+        # TODO: Async or thread this
+        # TODO: Loop to handle implant comms
 
 
 if __name__ == '__main__':
