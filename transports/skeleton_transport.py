@@ -1,5 +1,5 @@
 class Transport:
-    def __init__(self):
+    def __init__(self, component):
         self.info = {"name": "skeleton",
                      "author": "Und3rf10w",
                      "desc": "Skeleton for building out transports",
@@ -9,6 +9,8 @@ class Transport:
         self.config = {}
         # You REALLY SHOULD keep this in, so you can use the same logging engine
         self.logging = None
+        self.component = component
+        self.implant_id = None
 
     def prep_transport(self, transport_config):
         # Here you take the transport configuration and make a configuration that you're going to use by populating
@@ -29,6 +31,9 @@ class Transport:
         # Here you're going to return the cooked data you retrieved from your transport.
         # Your transport should NOT receive NOOPs unless its used for a connectivity check.
         return "ayyylmao"
+
+    def set_implant_id(self, implant_id):
+        self.implant_id = implant_id
 
     # You can implement literally any other functions you want here, as long as you do not rely on them being called outside
     #   of this module. The only three "exported" functions of a transport are transport.prep_transport,

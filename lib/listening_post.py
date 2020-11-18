@@ -2,9 +2,11 @@ import base64
 import asyncio
 import ast  # debug
 from time import sleep
+from threading import Thread
 
 from lib import networking
 from lib import core
+from lib import implants
 
 
 class Listener(object):
@@ -49,16 +51,7 @@ class Listener(object):
             exit()
 
     def prepare_manifests(self):
-        # TODO: actual manifest
-        # DEBUG
-        import uuid
-        manifest = {"implants": [{"implant_id": "c41b07a940254f1d87ba60aadb93dded", # [{"implant_id": uuid.uuid4().hex,
-                                  "implant_os": "win",
-                                  "implant_user": "user",
-                                  "lp_id": listener.component_id
-                                  }],
-                    "component_id": listener.component_id
-                    }
+        manifest = {"implants": listener.implants, "component_id": listener.component_id}
         return manifest
 
     def main(self):
@@ -73,16 +66,28 @@ class Listener(object):
             listener.logging.log(f"Requesting commands from teamsever",
                                  source=f"{listener.listening_post.info['name']}.main",
                                  level="debug")
-            command_request_frame = core.request_command(listener)
-            networking.send_management_frame(listener, command_request_frame)
-            command_reply_frame = networking.recv_management_frame(listener)
-            # if command_request_frame is not None:
+            if len(listener.implants) > 0:
+                # Only request commands if we have implants to request them for
+                command_request_frame = core.request_command(listener)
+                networking.send_management_frame(listener, command_request_frame)
+                command_reply_frame = networking.recv_management_frame(listener)
             #     # TODO: Routing to implants should happen in core.
             listener.logging.log(f"Pausing cmd_receipt thread for {listener.config.config['lp']['main_job_timer']} seconds",
                                  source=f"{listener.listening_post.info['name']}.main",
                                  level="debug")
             sleep(int(listener.config.config['lp']['main_job_timer']))
             pass
+
+    def setup_transports(self):
+        try:
+            for section in listener.config.config.sections():
+                if section.startswith("transport_"):
+                    transport_name = section.replace("transport_", "")
+                    transport_config = dict(listener.config.config[section].items())
+                    implants.import_transport(listener, transport_name, transport_config)
+        except Exception as e:
+            listener.logging.log(f"Critical [{type(e).__name__}] when initalizing transport: {e}",
+                                 level="critical", source=f"{listener.listening_post.info['name']}")
 
     def start_lp(self, *args):
         """
@@ -97,6 +102,9 @@ class Listener(object):
         listener = args[0]
         try:
             # TODO: Setup Listener transport(s)
+            transport_thread = Thread(target=self.setup_transports(), daemon=False)
+            transport_thread.start()
+            # self.setup_transports()
 
             # TODO: Request Manifests from Implants
 

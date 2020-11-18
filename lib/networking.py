@@ -1,6 +1,7 @@
 import socket
 import struct
 import ast
+from time import sleep
 
 from lib import frame_orchestrator
 from lib import transmit
@@ -25,7 +26,11 @@ def connect_to_listener_socket(addr, port):
 def send_management_frame(listener, data):
     slen = struct.pack('<I', len(data))
     listener.logging.log(f"Encoded data: {data}", level="debug", source="lib.networking.send")
-    listener.management_socket.send(slen + data)
+    try:
+        listener.management_socket.send(slen + data)
+    except BrokenPipeError:
+        sleep(60)
+        listener.management_socket.send(slen + data)
 
 
 def recv_management_frame(listener):

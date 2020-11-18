@@ -9,6 +9,9 @@ from lib import logging
 from lib import listening_post
 from lib import configparse
 from lib import common
+from lib import transmit
+from lib import frame_orchestrator
+from lib import implants
 from lib.crypto import asymmetric
 
 
@@ -41,13 +44,14 @@ class Listener(object):
         self.xor_key = ast.literal_eval(self.config.config['crypto']['xor_key'])
 
         # Implant Runtime Vars
-        self.implants = {}
+        self.implants = []
         self.implant_count = len(self.implants)
         self.cmd_queue = []
 
         # Transport Runtime Vars
         # Used for implant manifest retrievals
-        self.transports = {}
+        self.transports = []
+        self.transport_frame_queue = []
         # self.transport_count = len(self.transports)
 
     def start(self):
@@ -65,6 +69,28 @@ class Listener(object):
         self.logging.log("Started LP")
         # TODO: Async or thread this
         # TODO: Loop to handle implant comms
+
+    async def process_transport_frame(self):
+        transport_frame = self.transport_frame_queue[-1]
+        self.transport_frame_queue.pop(-1)
+        cooked_frame = transport_frame['frame']
+        if transport_frame['type'] == "init":
+            # TODO: Check if implant is already in self.implants
+            # if implants._get_implant_index(uncooked_frame['args'][0]['manifest']['implant_id']) is None:
+                # uncooked_frame = ast.literal_eval(transmit.uncook_sealed_frame(self, cooked_frame).decode('utf-8'))
+            # else:
+            #     uncooked_frame =
+            uncooked_frame = ast.literal_eval(transmit.uncook_sealed_frame(self, cooked_frame).decode('utf-8'))
+        else:
+            try:
+                uncooked_frame = ast.literal_eval(transmit.uncook_transmit_frame(self, cooked_frame).decode('utf-8'))
+            except Exception as e:
+                self.logging.log("Invalid transport frame received", level="error")
+                uncooked_frame = None
+        if uncooked_frame is not None:
+            uncooked_reply_frame = frame_orchestrator.determine_destination(uncooked_frame, self)
+            reply_frame = transmit.cook_transmit_frame(self, uncooked_reply_frame, uncooked_frame['args'][0]['manifest']['implant_id'])
+            return reply_frame
 
 
 if __name__ == '__main__':
