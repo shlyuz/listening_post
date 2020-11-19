@@ -11,6 +11,7 @@ class Transport:
         self.logging = None
         self.component = component
         self.implant_id = None
+        self.transport_id = None
 
     def prep_transport(self, transport_config):
         # Here you take the transport configuration and make a configuration that you're going to use by populating

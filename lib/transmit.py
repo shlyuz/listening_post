@@ -68,8 +68,8 @@ def cook_transmit_frame(listener, data, target_component_id="teamserver"):
         my_privkey = listener.current_private_key
     else:
         target_pubkey, my_privkey = find_implant_pubkey(listener, target_component_id)
-        target_pubkey = lib.crypto.asymmetric.public_key_from_bytes(target_pubkey)
-        my_privkey = lib.crypto.asymmetric.public_key_from_bytes(my_privkey)
+        target_pubkey = lib.crypto.asymmetric.public_key_from_bytes(str(target_pubkey))
+        my_privkey = lib.crypto.asymmetric.private_key_from_bytes(str(my_privkey))
         # TODO: Extract the private key for the listener here
     rc6_key = secrets.token_urlsafe(16)
     listener.logging.log(f"rc6 key: {rc6_key}", level="debug", source="lib.transmit")

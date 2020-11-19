@@ -24,6 +24,7 @@ def connect_to_listener_socket(addr, port):
 
 
 def send_management_frame(listener, data):
+    reset_socket(listener)
     slen = struct.pack('<I', len(data))
     listener.logging.log(f"Encoded data: {data}", level="debug", source="lib.networking.send")
     try:
@@ -61,6 +62,8 @@ def recv_management_frame(listener):
         listener.management_socket.close()
         listener.management_socket = connect_to_listener_socket(listener.addr, listener.port)
         frame_size = listener.management_socket.recv(4)
+    except ValueError as e:
+        raise ConnectionResetError
     except Exception as e:
         listener.logging.log(f"Critical [{type(e).__name__}] when starting teamserver api server: {e}",
                              level="critical", source="lib.networking.recv")

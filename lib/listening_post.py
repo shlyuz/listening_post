@@ -1,6 +1,6 @@
 import base64
 import asyncio
-import ast  # debug
+import uuid
 from time import sleep
 from threading import Thread
 
@@ -63,14 +63,18 @@ class Listener(object):
                              source=f"{listener.listening_post.info['name']}.main",
                              level="debug")
         while True:
-            listener.logging.log(f"Requesting commands from teamsever",
-                                 source=f"{listener.listening_post.info['name']}.main",
-                                 level="debug")
             if len(listener.implants) > 0:
+                listener.logging.log(f"Requesting commands from teamsever",
+                                     source=f"{listener.listening_post.info['name']}.main",
+                                     level="debug")
                 # Only request commands if we have implants to request them for
                 command_request_frame = core.request_command(listener)
                 networking.send_management_frame(listener, command_request_frame)
                 command_reply_frame = networking.recv_management_frame(listener)
+                if command_reply_frame is not None:
+                    networking.send_management_frame(listener, command_reply_frame)
+                # This is just to fix the connection
+                # networking.recv_management_frame(listener)
             #     # TODO: Routing to implants should happen in core.
             listener.logging.log(f"Pausing cmd_receipt thread for {listener.config.config['lp']['main_job_timer']} seconds",
                                  source=f"{listener.listening_post.info['name']}.main",
@@ -84,6 +88,7 @@ class Listener(object):
                 if section.startswith("transport_"):
                     transport_name = section.replace("transport_", "")
                     transport_config = dict(listener.config.config[section].items())
+                    transport_config['transport_id'] = uuid.uuid4().hex
                     implants.import_transport(listener, transport_name, transport_config)
         except Exception as e:
             listener.logging.log(f"Critical [{type(e).__name__}] when initalizing transport: {e}",
@@ -101,16 +106,10 @@ class Listener(object):
 
         listener = args[0]
         try:
-            # TODO: Setup Listener transport(s)
             transport_thread = Thread(target=self.setup_transports(), daemon=False)
             transport_thread.start()
             # self.setup_transports()
 
-            # TODO: Request Manifests from Implants
-
-            # TODO: Update internal values with manifests from Implants
-
-            # TODO: Prepare Listening Post Manifest
             listener.manifest = self.prepare_manifests()
 
             self.setup_management_socket()

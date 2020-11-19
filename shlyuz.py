@@ -87,6 +87,8 @@ class Listener(object):
             except Exception as e:
                 self.logging.log("Invalid transport frame received", level="error")
                 uncooked_frame = None
+        if uncooked_frame['cmd'] == 'ii':
+            uncooked_frame['transport_id'] = transport_frame['transport_id']
         if uncooked_frame is not None:
             uncooked_reply_frame = frame_orchestrator.determine_destination(uncooked_frame, self)
             reply_frame = transmit.cook_transmit_frame(self, uncooked_reply_frame, uncooked_frame['args'][0]['manifest']['implant_id'])

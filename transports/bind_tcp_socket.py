@@ -17,6 +17,8 @@ class Transport:
         self.bind_port = 8084
         self.component = component
         self.logging = None
+        self.implant_id = None
+        self.transport_id = None
 
     async def handle_client(self, reader, writer, component):
         self.logging.log(f"Transport Socket Conn: {reader._transport.get_extra_info('peername')}", level="debug",
@@ -29,10 +31,10 @@ class Transport:
             frame = await reader.read(slen)
             if frame[:len(ast.literal_eval(component.config.config['lp']['init_signature']))] == ast.literal_eval(component.config.config['lp']['init_signature']):
                 frame = frame[len(ast.literal_eval(component.config.config['lp']['init_signature'])):]
-                transport_frame = {"frame": frame, "type": "init"}
+                transport_frame = {"frame": frame, "type": "init", "transport_id": self.transport_id}
             else:
                 # TODO: Attach the component's id here
-                transport_frame = {"frame": frame, "type": "std"}
+                transport_frame = {"frame": frame, "type": "std", "transport_id": self.transport_id}
             component.transport_frame_queue.append(transport_frame)
             reply_frame = await component.process_transport_frame()
             response = reply_frame
@@ -64,6 +66,7 @@ class Transport:
         self.logging = transport_config['logging']
         self.bind_addr = self.config['bind_addr']
         self.bind_port = int(self.config['bind_port'])
+        self.transport_id = self.config['transport_id']
         t = Thread(target=self.start_background_loop, args=(loop,), daemon=False)
         loop.create_task(asyncio.start_server(lambda reader, writer: self.handle_client(reader=reader, writer=writer, component=self.component),
                                               host=self.config['bind_addr'],
