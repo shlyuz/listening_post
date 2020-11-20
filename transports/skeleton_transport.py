@@ -19,7 +19,7 @@ class Transport:
         self.config = transport_config
         # You REALLY SHOULD keep this in, so you can use the same logging engine
         self.logging = transport_config['logging']
-        self.logging.log(f"Transport prepared", level="debug", source=self.info.name)
+        self.logging.log(f"Transport prepared", level="debug", source=self.info['name'])
 
     def send_data(self, data):
         # Here you're going to take cooked data and send it over whatever your transport mechanism is. Return 0 in

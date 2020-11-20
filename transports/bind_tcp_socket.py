@@ -1,8 +1,10 @@
 import struct
 import asyncio
 import ast
+import socket
+import random
+import string
 from threading import Thread
-
 
 class Transport:
     def __init__(self, component):
@@ -16,9 +18,12 @@ class Transport:
         self.bind_addr = "127.0.0.1"
         self.bind_port = 8084
         self.component = component
+        self.socket = None
         self.logging = None
         self.implant_id = None
         self.transport_id = None
+        self.async_loop = None
+        self.data_queue = []
 
     async def handle_client(self, reader, writer, component):
         self.logging.log(f"Transport Socket Conn: {reader._transport.get_extra_info('peername')}", level="debug",
@@ -60,21 +65,63 @@ class Transport:
         loop.run_forever()
 
     def prep_transport(self, transport_config):
-        loop = asyncio.new_event_loop()
+        self.async_loop = asyncio.new_event_loop()
         t = Thread
         self.config = transport_config
         self.logging = transport_config['logging']
         self.bind_addr = self.config['bind_addr']
         self.bind_port = int(self.config['bind_port'])
         self.transport_id = self.config['transport_id']
-        t = Thread(target=self.start_background_loop, args=(loop,), daemon=False)
-        loop.create_task(asyncio.start_server(lambda reader, writer: self.handle_client(reader=reader, writer=writer, component=self.component),
-                                              host=self.config['bind_addr'],
-                                              port=self.config['bind_port'],))
+        t = Thread(target=self.start_background_loop, args=(self.async_loop,), daemon=False)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.socket.bind((self.config['bind_addr'], int(self.config['bind_port'])))
+        except OSError:
+            self.logging.log(f"Transport binding failed", level="critical", source=self.info['name'])
+            from time import sleep
+            sleep(10)
+            self.socket.bind((self.config['bind_addr'], int(self.config['bind_port'])))
+        self.socket.listen()
+        self.async_loop.create_task(asyncio.start_server(
+            lambda reader, writer: self.handle_client(reader=reader, writer=writer, component=self.component), sock=self.socket))
         t.start()
+        self.logging.log(f"Transport prepared", level="debug", source=self.info['name'])
+
+    async def send_coro(self, data):
+        loop = self.async_loop
+
+        # Create a pair of connected sockets
+        rsock, wsock = socket.socketpair()
+
+        # Register the open socket to wait for data.
+        reader, writer = await asyncio.open_connection(sock=rsock)
+
+        # Send our data
+        data_len = struct.pack('<I', len(str(data).encode('utf-8')))
+        loop.call_soon(wsock.send, data_len + str(data).encode('utf-8'))
+
+        writer.close()
 
     def send_data(self, data):
-        pass
+        self.data_queue.append(data)
+        # asyncio.run_coroutine_threadsafe(self.send_coro(data), self.async_loop)
+        # # try:
+        # #     self.logging.log(f"SEND: {data}", level="debug", source=f"transport.{self.info['name']}")
+        # #     rlen = struct.pack('<I', len(str(data).encode('utf-8')))
+        # #     # Send the response
+        # #     self.writer.write(rlen + data)
+        # #     await self.writer.drain()
+        # # except ConnectionResetError:
+        # #     self.writer.close()
+        # # except struct.error:
+        # #     self.logging.log(f"Invalid data", level="debug", source=f"transport.{self.info['name']}")
+        # # except UnboundLocalError:
+        # #     self.logging.log(f"Invalid frame received", level="error", source=f"transport.{self.info['name']}")
+        # #     self.logging.log(f"Invalid frame {frame}", level="debug", source=f"transport.{self.info['name']}")
+        # # except Exception as e:
+        # #     self.logging.log(f"Encountered [{type(e).__name__}] {e}", level="error",
+        # #                      source=f"transport.{self.info['name']}")
+        # # self.writer.close()
 
     def recv_data(self):
         pass

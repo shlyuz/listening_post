@@ -14,20 +14,29 @@ import lib.implants
 
 def find_implant_pubkey(listener, implant_id):
     implant_index = lib.implants._get_implant_index(listener, implant_id)
+    # TODO: Rotate keys here
     return listener.implants[implant_index]['ipk'], listener.implants[implant_index]['priv_key']
 
 
-def uncook_transmit_frame(listener, frame):
+def uncook_transmit_frame(listener, frame, target_component_id="teamserver"):
     """
 
     :param listener:
     :param frame:
+    :param target_component_id: OPTIONAL The id of the component who's encryption key to use
     :return:
     """
+    if target_component_id == "teamserver":
+        # TODO: Rotate keys here
+        target_pubkey = listener.current_ts_pubkey
+        my_privkey = listener.current_private_key
+    else:
+        target_pubkey, my_privkey = find_implant_pubkey(listener, target_component_id)
+        target_pubkey = lib.crypto.asymmetric.public_key_from_bytes(str(target_pubkey))
+        my_privkey = lib.crypto.asymmetric.private_key_from_bytes(str(my_privkey))
 
     # Asymmetric Encryption Routine
-    ts_pubkey = listener.current_ts_pubkey
-    frame_box = lib.crypto.asymmetric.prepare_box(listener.current_private_key, ts_pubkey)
+    frame_box = lib.crypto.asymmetric.prepare_box(my_privkey, target_pubkey)
     transmit_frame = lib.crypto.asymmetric.decrypt(frame_box, frame)
 
     # Decoding Routine

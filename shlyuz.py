@@ -12,6 +12,7 @@ from lib import common
 from lib import transmit
 from lib import frame_orchestrator
 from lib import implants
+from lib import core
 from lib.crypto import asymmetric
 
 
@@ -83,15 +84,20 @@ class Listener(object):
             uncooked_frame = ast.literal_eval(transmit.uncook_sealed_frame(self, cooked_frame).decode('utf-8'))
         else:
             try:
-                uncooked_frame = ast.literal_eval(transmit.uncook_transmit_frame(self, cooked_frame).decode('utf-8'))
+                implant_index = implants._get_implant_index_from_transport_id(self, transport_frame['transport_id'])
+                implant_id = self.implants[implant_index]['implant_id']
+                uncooked_frame = ast.literal_eval(transmit.uncook_transmit_frame(self, cooked_frame, implant_id).decode('utf-8'))
             except Exception as e:
                 self.logging.log("Invalid transport frame received", level="error")
                 uncooked_frame = None
         if uncooked_frame['cmd'] == 'ii':
             uncooked_frame['transport_id'] = transport_frame['transport_id']
-        if uncooked_frame is not None:
             uncooked_reply_frame = frame_orchestrator.determine_destination(uncooked_frame, self)
-            reply_frame = transmit.cook_transmit_frame(self, uncooked_reply_frame, uncooked_frame['args'][0]['manifest']['implant_id'])
+            reply_frame = transmit.cook_transmit_frame(self, uncooked_reply_frame,
+                                                       uncooked_frame['args'][0]['manifest']['implant_id'])
+            return reply_frame
+        if uncooked_frame is not None:
+            reply_frame = frame_orchestrator.determine_destination(uncooked_frame, self)
             return reply_frame
 
 

