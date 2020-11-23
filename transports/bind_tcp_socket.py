@@ -30,7 +30,7 @@ class Transport:
                          source=f"transport.{self.info['name']}")
         try:
             request_size = await reader.read(4)
-            if request_size == b'':
+            if request_size == b'' or request_size == b'\x00\x00\x00\x00':
                 raise ConnectionResetError
             slen = struct.unpack('<I', request_size)[0]
             frame = await reader.read(slen)
@@ -49,7 +49,7 @@ class Transport:
             writer.write(rlen + response)
             await writer.drain()
         except ConnectionResetError:
-            writer.close()
+            pass
         except struct.error:
             self.logging.log(f"Invalid data", level="debug", source=f"transport.{self.info['name']}")
         except UnboundLocalError:
