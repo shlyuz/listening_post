@@ -74,6 +74,7 @@ class Transport:
         self.transport_id = self.config['transport_id']
         t = Thread(target=self.start_background_loop, args=(self.async_loop,), daemon=False)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(300)
         try:
             self.socket.bind((self.config['bind_addr'], int(self.config['bind_port'])))
         except OSError:

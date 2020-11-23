@@ -55,10 +55,6 @@ class Listener(object):
         return manifest
 
     def main(self):
-        # TODO: Loop this, thread this
-        #  * Do a get command
-        #   * if fails, sleep
-        #   * else, send command to implant and relay reply on next timer
         listener.logging.log(f"Starting main execution",
                              source=f"{listener.listening_post.info['name']}.main",
                              level="debug")
@@ -73,9 +69,6 @@ class Listener(object):
                 command_reply_frame = networking.recv_management_frame(listener)
                 if command_reply_frame is not None:
                     networking.send_management_frame(listener, command_reply_frame)
-                # This is just to fix the connection
-                # networking.recv_management_frame(listener)
-            #     # TODO: Routing to implants should happen in core.
             listener.logging.log(f"Pausing cmd_receipt thread for {listener.config.config['lp']['main_job_timer']} seconds",
                                  source=f"{listener.listening_post.info['name']}.main",
                                  level="debug")

