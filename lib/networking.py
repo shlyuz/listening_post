@@ -19,6 +19,7 @@ def connect_to_listener_socket(addr, port):
     :return:
     """
     management_channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    management_channel.settimeout(300)
     management_channel.connect((addr, int(port)))
     return management_channel
 

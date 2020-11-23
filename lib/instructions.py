@@ -15,4 +15,6 @@ def create_instruction_frame(data):
         instruction_frame['txid'] = data['txid']
     if 'uname' in data.keys():
         instruction_frame['uname'] = uuid.uuid4().hex
+    if 'done' in data.keys():
+        instruction_frame['done'] = data['done']
     return instruction_frame
