@@ -3,7 +3,7 @@ import asyncio
 import ast
 import socket
 import random
-import string
+import time
 from threading import Thread
 
 class Transport:
@@ -46,6 +46,7 @@ class Transport:
             self.logging.log(f"SEND: {response}", level="debug", source=f"transport.{self.info['name']}")
             rlen = struct.pack('<I', len(str(response).encode('utf-8')))
             # Send the response
+            time.sleep(0.01)
             writer.write(rlen + response)
             await writer.drain()
         except ConnectionResetError:
