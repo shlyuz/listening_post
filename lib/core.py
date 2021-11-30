@@ -28,12 +28,10 @@ def send_manifest(frame, listener):
     :return:
     """
     listener.ts_pubkey = asymmetric.public_key_from_bytes(str(frame['args'][0]['tpk']))
-    # TODO: HIGH_PRI: Make a listener.manifest
     data = {'component_id': listener.component_id, "cmd": "lpm",
             "args": [listener.manifest, {"lpk": listener.initial_public_key._public_key}],
             "txid": frame['txid']}
     instruction_frame = instructions.create_instruction_frame(data)
-    # TODO: value setting
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")
     return reply_frame
 
@@ -139,22 +137,6 @@ def receive_command(frame, listener):
     instruction_frame = instructions.create_instruction_frame(data)
     reply_frame = transmit.cook_transmit_frame(listener, instruction_frame, "teamserver")
     return reply_frame
-
-
-# TODO: Unused
-# def relay_cmds(listener):
-#     for command in listener.cmd_queue:
-#         if command['state'] == "RELAYING":
-#             try:
-#                 implant_index = implants._get_implant_index(listener, command['component_id'])
-#                 transport_index = _get_transport_index(listener, command['transport_id'])
-#                 if str(implant_index) and str(transport_index):
-#                     # TODO: Cook the command, you can resolve the implant's keys with the implant_index
-#                     listener.transports[transport_index].send_data(command)
-#             except Exception as e:
-#                 listener.logging.log(
-#                     f"Critical [{type(e).__name__}] when relaying command to implant {command['component_id']}: {e}",
-#                     level="critical", source=f"lib.core")
 
 
 def retrieve_command_for_implant(frame, listener):
